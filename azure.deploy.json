@@ -2,6 +2,12 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {        
+	  "orcaAppId": {
+	    "type": "string",
+	    "metadata": {
+		"description": "The principal to assign the role to"
+	    }
+	  }
     },
     "variables": {  
         "storageAccountName": "[concat('stor', uniqueString(resourceGroup().id))]",
