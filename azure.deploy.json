@@ -7,53 +7,18 @@
       "metadata": {
         "description": "The principal to assign the role to"
       }
-    },
-
-    "location": {
-      "type": "string",
-      "defaultValue": "centralus",
-      "metadata": {
-        "description": "TODO"
-      }
-    },
-    "roleName": {
-      "type": "string",
-      "defaultValue": "[concat('Orca Security Side-Scanner Role v1.0 / ', substring(subscription().id, 39, 12))]",
-      "metadata": {
-        "description": ""
-      }
-    },
-    "actions": {
-      "type": "array",
-      "defaultValue": [
-        "*/read",
-        "Microsoft.Compute/snapshots/*",
-        "Microsoft.Compute/snapshots/*/action",
-        "Microsoft.KeyVault/vaults/deploy/action",
-        "Microsoft.Compute/disks/beginGetAccess/action",
-        "Microsoft.Storage/storageAccounts/listKeys/action"
-      ],
-      "metadata": {
-        "description": "Array of actions for the roleDefinition"
-      }
-    },
-    "notActions": {
-      "type": "array",
-      "defaultValue": [],
-      "metadata": {
-        "description": "Array of notActions for the roleDefinition"
-      }
     }
   },
   "variables": {
-    "roleDefName": "[guid(subscription().id, string(parameters('actions')), string(parameters('notActions')))]",
+    "roleDefName": "[guid(subscription().id, 'orca-v1')]",
     "roleAssignmentId": "[guid(subscription().id, 'roleAssignment')]",
     "rgRoleAssignmentId": "[guid(subscription().id, variables('resourceGroupName'))]",
     "scriptName": "OrcaSubscriptionDeploy",
     "rgRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
 
-    "resourceGroupName": "Orca-Security"
-
+    "resourceGroupName": "Orca-Security",
+    "location": "centralus",
+    "roleName": "[concat('Orca Security Side-Scanner Role v1.0 / ', substring(subscription().id, 39, 12))]"
   },
   "resources": [
 
@@ -61,7 +26,7 @@
     {
       "type": "Microsoft.Resources/resourceGroups",
       "apiVersion": "2020-06-01",
-      "location": "[parameters('location')]",
+      "location": "[variables('location')]",
       "name": "[variables('resourceGroupName')]",
       "tags": {
         "orca-role": "dedicated-scanner-resource-group"
@@ -109,14 +74,21 @@
       "apiVersion": "2018-01-01-preview",
       "name": "[variables('roleDefName')]",
       "properties": {
-        "roleName": "[parameters('roleName')]",
+        "roleName": "[variables('roleName')]",
         "description": "Permissions to allow Orca SideScanner to protect your system",
         "type": "customRole",
         "isCustom": true,
         "permissions": [
           {
-            "actions": "[parameters('actions')]",
-            "notActions": "[parameters('notActions')]"
+            "actions": [
+              "*/read",
+              "Microsoft.Compute/snapshots/*",
+              "Microsoft.Compute/snapshots/*/action",
+              "Microsoft.KeyVault/vaults/deploy/action",
+              "Microsoft.Compute/disks/beginGetAccess/action",
+              "Microsoft.Storage/storageAccounts/listKeys/action"
+            ],
+            "notActions": []
           }
         ],
         "assignableScopes": ["[subscription().id]"]
@@ -136,15 +108,12 @@
         "principalType": "ServicePrincipal"
       }
     }
+  ]
 
-
-
-  ],
-
-  "outputs": {
-    "result": {
-      "value": "[reference(concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',variables('resourceGroupName'), '/providers/Microsoft.Resources/deploymentScripts/', 'Orca-Connect-Deployment'), '2020-10-01').outputs]",
-      "type": "object"
-    }
-  }
+  // "outputs": {
+  //   "result": {
+  //     "value": "[reference(concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',variables('resourceGroupName'), '/providers/Microsoft.Resources/deploymentScripts/', 'Orca-Connect-Deployment'), '2020-10-01').outputs]",
+  //     "type": "object"
+  //   }
+  // }
 }
