@@ -1,152 +1,150 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {        
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "orcaSpId": {
+      "type": "string",
+      "metadata": {
+        "description": "The principal to assign the role to"
+      }
     },
-    "variables": {  
-        "storageAccountName": "[concat('stor', uniqueString(resourceGroup().id))]",
-        "hostingPlanName": "[concat('plan', uniqueString(resourceGroup().id))]",
-        "functionAppName": "[concat('func', uniqueString(resourceGroup().id))]",
-        "logicAppName": "[concat('logi', uniqueString(resourceGroup().id))]"         
+
+    "location": {
+      "type": "string",
+      "defaultValue": "centralus",
+      "metadata": {
+        "description": "TODO"
+      }
     },
-    "resources": [
-        {
-            "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2016-01-01",
-            "name": "[variables('storageAccountName')]",
-            "kind": "Storage",
-            "location": "[resourceGroup().location]",
-            "sku": {
-                "name": "Standard_LRS",
-                "tier": "Standard"
-            }
-        },
-        {
-            "type": "Microsoft.Web/serverfarms",
-            "apiVersion": "2015-04-01",
-            "name": "[variables('hostingPlanName')]",
-            "location": "[resourceGroup().location]",
-            "properties": {
-                "name": "[variables('hostingPlanName')]",
-                "computeMode": "Dynamic",
-                "sku": "Dynamic"
-            }
-        },
-        {  
-		    "type": "Microsoft.Web/sites",
-            "apiVersion": "2016-08-01",
-	    	"name": "[variables('functionAppName')]",
-            "location": "[resourceGroup().location]",
-            "kind": "functionapp",
-            "properties": {
-                "name": "[variables('functionAppName')]",
-                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-                "siteConfig": {
-                    "cors": {
-                        "allowedOrigins": ["*"]
-                    },
-                    "appSettings": [
-                        {
-                            "name": "FUNCTIONS_EXTENSION_VERSION",
-                            "value": "~1"
-                        }, 
-                        {
-                            "name": "AzureWebJobsStorage",
-                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]"
-                        }, 
-                        {
-                            "name": "AzureWebJobsDashboard",
-                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]"
-                        },
-                        {
-                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",      
-                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]"
-                        },
-                        {
-                            "name": "WEBSITE_CONTENTSHARE",
-                            "value": "functionshare"
-                        }
-                    ]
-                }
-            },
-            "dependsOn": [
-                "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
-            ],
-            "resources": [
-                {
-                    "apiVersion": "2015-08-01",
-                    "name": "web",
-                    "type": "sourcecontrols",
-                    "dependsOn": [
-                        "[resourceId('Microsoft.Web/Sites', variables('functionAppName'))]"
-                    ],
-                    "properties": {
-                        "RepoUrl": "https://github.com/seesharprun/IntegrationExampleFunction.git",
-                        "branch": "master",
-                        "IsManualIntegration": true
-                    }
-                }
-            ]
-        },
-        {
-            "type": "Microsoft.Logic/workflows",
-            "apiVersion": "2016-10-01",
-            "name": "[variables('logicAppName')]",
-            "location": "[resourceGroup().location]",
-            "properties": {
-                "definition": {
-                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-                    "actions": {
-                        "Response": {
-                            "inputs": {
-                                "body": "@body('StoreJSON')",
-                                "statusCode": "@outputs('StoreJSON')['statusCode']"
-                            },
-                            "runAfter": {
-                                "StoreJSON": [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type": "Response"
-                        },
-                        "StoreJSON": {
-                            "inputs": {
-                                "body": "@triggerBody()",
-                                "function": {
-                                    "id": "[concat(resourceId('Microsoft.Web/sites', variables('functionAppName')), '/functions/StoreJSON')]"
-                                }
-                            },
-                            "runAfter": {},
-                            "type": "Function"
-                        }
-                    },
-                    "contentVersion": "1.0.0.0",
-                    "outputs": {},
-                    "parameters": {},
-                    "triggers": {
-                        "HttpRequest": {
-                            "inputs": {
-                                "schema": {}
-                            },
-                            "kind": "Http",
-                            "type": "Request"
-                        }
-                    }
-                },
-                "parameters": {},
-                "state": "Enabled"
-            },
-            "dependsOn": [
-                "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
-                "[resourceId('Microsoft.Web/sites/sourcecontrols', variables('functionAppName'), 'web')]"
-            ]
-        }
-    ],    
-    "outputs": {
-        "LogicAppTriggerURL": {
-            "type": "string",
-            "value": "[listCallbackURL(resourceId('Microsoft.Logic/workflows/triggers', variables('logicAppName'), 'HttpRequest'), '2016-06-01').value]"
-        }
+    "roleName": {
+      "type": "string",
+      "defaultValue": "[concat('Orca Security Side-Scanner Role v1.0 / ', substring(subscription().id, 39, 12))]",
+      "metadata": {
+        "description": ""
+      }
+    },
+    "actions": {
+      "type": "array",
+      "defaultValue": [
+        "*/read",
+        "Microsoft.Compute/snapshots/*",
+        "Microsoft.Compute/snapshots/*/action",
+        "Microsoft.KeyVault/vaults/deploy/action",
+        "Microsoft.Compute/disks/beginGetAccess/action",
+        "Microsoft.Storage/storageAccounts/listKeys/action"
+      ],
+      "metadata": {
+        "description": "Array of actions for the roleDefinition"
+      }
+    },
+    "notActions": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Array of notActions for the roleDefinition"
+      }
     }
+  },
+  "variables": {
+    "roleDefName": "[guid(subscription().id, string(parameters('actions')), string(parameters('notActions')))]",
+    "roleAssignmentId": "[guid(subscription().id, 'roleAssignment')]",
+    "rgRoleAssignmentId": "[guid(subscription().id, variables('resourceGroupName'))]",
+    "scriptName": "OrcaSubscriptionDeploy",
+    "rgRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+
+    "resourceGroupName": "Orca-Security"
+
+  },
+  "resources": [
+
+    // create orca-security resource group.
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2020-06-01",
+      "location": "[parameters('location')]",
+      "name": "[variables('resourceGroupName')]",
+      "tags": {
+        "orca-role": "dedicated-scanner-resource-group"
+      },
+      "properties": {
+      }
+    },
+
+    // assign orca as "contributor" on the orca rg
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "[concat(variables('scriptName'), '-', 'assignmentScope')]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "dependsOn": [
+        "[variables('resourceGroupName')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2020-04-01-preview",
+              "name": "[variables('rgRoleAssignmentId')]",
+              "properties": {
+                "roleDefinitionId": "[variables('rgRoleDefinitionId')]",
+                "principalId": "[parameters('orcaSpId')]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ]
+        }
+      }
+    },
+
+    // create the per-subscription role definitions for orca
+    {
+      "type": "Microsoft.Authorization/roleDefinitions",
+      "apiVersion": "2018-01-01-preview",
+      "name": "[variables('roleDefName')]",
+      "properties": {
+        "roleName": "[parameters('roleName')]",
+        "description": "Permissions to allow Orca SideScanner to protect your system",
+        "type": "customRole",
+        "isCustom": true,
+        "permissions": [
+          {
+            "actions": "[parameters('actions')]",
+            "notActions": "[parameters('notActions')]"
+          }
+        ],
+        "assignableScopes": ["[subscription().id]"]
+      }
+    },
+
+    // assign the role definitions to orca subscription
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2020-04-01-preview",
+      "name": "[variables('roleAssignmentId')]",
+      "dependsOn": [ "[variables('roleDefName')]" ],
+      "properties": {
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefName'))]",
+        "principalId": "[parameters('orcaSpId')]",
+        "scope": "[subscription().id]",
+        "principalType": "ServicePrincipal"
+      }
+    }
+
+
+
+  ],
+
+  "outputs": {
+    "result": {
+      "value": "[reference(concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',variables('resourceGroupName'), '/providers/Microsoft.Resources/deploymentScripts/', 'Orca-Connect-Deployment'), '2020-10-01').outputs]",
+      "type": "object"
+    }
+  }
 }
