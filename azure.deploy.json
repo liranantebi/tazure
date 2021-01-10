@@ -10,15 +10,16 @@
     }
   },
   "variables": {
-    "roleDefName": "[guid(subscription().id, 'orca-v1')]",
+    "roleDefVersion": "v1.00",
+    "roleName": "[concat('Orca Security Side-Scanner Role ', variables('roleDefVersion'), ' / ', substring(subscription().id, 39, 12))]",
+    "roleDefName": "[guid(subscription().id, variables('roleName'))]",
     "roleAssignmentId": "[guid(subscription().id, 'roleAssignment')]",
     "rgRoleAssignmentId": "[guid(subscription().id, variables('resourceGroupName'))]",
     "scriptName": "OrcaSubscriptionDeploy",
     "rgRoleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
 
     "resourceGroupName": "Orca-Security",
-    "location": "centralus",
-    "roleName": "[concat('Orca Security Side-Scanner Role v1.0 / ', substring(subscription().id, 39, 12))]"
+    "location": "centralus"
   },
   "resources": [
 
